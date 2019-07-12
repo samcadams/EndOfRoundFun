@@ -5,6 +5,8 @@ ulx.target_gamemode = {}
 table.insert(ulx.target_gamemode,"sleeper")
 table.insert(ulx.target_gamemode,"deathmatch")
 table.insert(ulx.target_gamemode,"bunnyhop")
+table.insert(ulx.target_gamemode,"juggernaut")
+table.insert(ulx.target_gamemode,"infection")
 
 
 function ulx.forcecustomround( calling_ply, should_cancel )
@@ -13,9 +15,9 @@ function ulx.forcecustomround( calling_ply, should_cancel )
 		EndRoundGame.NextRoundCustom = not should_cancel
 		
 		if should_cancel then
-			ulx.fancyLogAdmin( calling_ply, "#A canceled the next custom round.")
+			ulx.fancyLogAdmin( calling_ply, true, "#A canceled the next custom round.")
 		else
-			ulx.fancyLogAdmin( calling_ply, "#A forced the next round to be custom.")
+			ulx.fancyLogAdmin( calling_ply, true, "#A forced the next round to be custom.")
 		end
 	end
 end
@@ -33,11 +35,11 @@ function ulx.forcecustomroundgamemode( calling_ply, target_gamemode, should_sile
 			return
 		end
 		EndRoundGame.NextGamemode = EndRoundGame.Gamemodes[target_gamemode]
-	    ulx.fancyLogAdmin( calling_ply, true, "#A forced the next custom gamemode to be %s", target_gamemode)
+	    ulx.fancyLogAdmin( calling_ply, true, "#A forced the next custom gamemode to be `"..target_gamemode.."`")
 	end
 end
 local forcecustomroundgamemode = ulx.command( CATEGORY_NAME, "ulx forcecustomroundgamemode", ulx.forcecustomroundgamemode, "!forcecustomroundgamemode" )
-forcecustomroundgamemode:addParam{ type=ULib.cmds.StringArg, completes=ulx.target_gamemode, hint="Gamemode" }
+forcecustomroundgamemode:addParam{ type=ULib.cmds.StringArg, completes=ulx.target_gamemode, hint="infection" }
 forcecustomroundgamemode:addParam{ type=ULib.cmds.BoolArg, invisible=true }
 forcecustomroundgamemode:defaultAccess( ULib.ACCESS_SUPERADMIN )
 forcecustomroundgamemode:help( "Force the next custom round to be a certain gamemode" )

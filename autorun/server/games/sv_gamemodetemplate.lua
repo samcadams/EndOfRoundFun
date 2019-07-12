@@ -11,7 +11,7 @@ All are called on their respective TTT hooks
 Make 100% sure you hook.Remove any hooks you add in roundEnd() so nothing remains.
 
 The gamemode object is strictly serverside. Any communication will clients needs to be done through the net library
---]]
+
 
 
 EndRoundGame.Gamemodes["gamemode_name"] = {
@@ -30,3 +30,5 @@ roundEnd = function()
 end,
 --You can add custom fields to the gamemode and access them via `EndRoundGame.ActiveGamemode` if your gamemodes enabled
 }
+
+]]

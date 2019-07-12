@@ -1,16 +1,5 @@
 util.AddNetworkString("firesttt_csaycustomround")
 
---ADD TO UTIL FILE SOMEWHERE AT SOME POINT
-function math.randomchoice(t) --Selects a random item from a table
-    local keys = {}
-    for key, value in pairs(t) do
-        keys[#keys+1] = key --Store keys in another table
-    end
-    index = keys[math.random(1, #keys)]
-    return t[index]
-end
-
-
 EndRoundGame = {}
 EndRoundGame.IsActive = false
 EndRoundGame.ActiveGamemode = nil
@@ -26,7 +15,6 @@ for _,v in pairs(files) do
 	counter = counter + 1
 	print("[CUSTOM ROUNDS] Loaded "..counter.." end round gamemodes...."..v)
 end
-
 
 --ROUND MANAGEMENT
 
@@ -54,11 +42,11 @@ hook.Add("TTTPrepareRound", "firespossiblyenable", function()
 		EndRoundGame.ActiveGamemode = math.randomchoice(EndRoundGame.Gamemodes)
 	end
 	local gm = EndRoundGame.ActiveGamemode
-
 	net.Start("firesttt_csaycustomround")
 		net.WriteString(gm.name)
 		net.WriteString(gm.description)
 	net.Broadcast()
+	gm.roundPreparing()
 end)
 
 hook.Add("TTTBeginRound", "firesbeginEndRoundGame", function(result)

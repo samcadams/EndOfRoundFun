@@ -21,6 +21,10 @@ EndRoundGame.Gamemodes["deathmatch"] =
 				net.WriteUInt(v:GetRole(), 2)
 				net.Send(v)
 			end
+			v:SetCredits(1)
+			net.Start("TTT_Credits")
+			net.WriteUInt(v:GetCredits(), 8)
+			net.Send(v)
 		end
 
 		--Hook Karma blocker so no one will get penalized if they kill a friendly
