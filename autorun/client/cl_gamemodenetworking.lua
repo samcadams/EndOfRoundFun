@@ -16,14 +16,10 @@ net.Receive("firesttt_bunnyhop", function()
 	end
 end)
 
+--todo: remove
 net.Receive("firesttt_sleepy", function()
 	chat.AddText(Color(255,0,0), "[CUSTOM ROUND] ", Color(255,255,255), "You're the Sleeper Traitor. Betray those who are innocent.")
 end)
-
-net.Receive("firesttt_juggernaut", function()
-	chat.AddText(Color(255,0,0), "[CUSTOM ROUND] ", Color(255,255,255), "You're going to be the Juggernaut this round, Get armed and ready.")
-end)
-
 
 net.Receive("firesttt_broadcastall",function(len) 
 		local msg = net.ReadTable()
