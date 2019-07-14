@@ -43,3 +43,21 @@ forcecustomroundgamemode:addParam{ type=ULib.cmds.StringArg, completes=ulx.targe
 forcecustomroundgamemode:addParam{ type=ULib.cmds.BoolArg, invisible=true }
 forcecustomroundgamemode:defaultAccess( ULib.ACCESS_SUPERADMIN )
 forcecustomroundgamemode:help( "Force the next custom round to be a certain gamemode" )
+
+
+function ulx.customvote( calling_ply)
+	if SERVER then
+		calling_ply:SendLua("ShowVotingFrame()")
+	end
+end
+local forcecustomroundgamemode = ulx.command( CATEGORY_NAME, "ulx customvote", ulx.customvote, "!customvote" )
+forcecustomroundgamemode:defaultAccess( ULib.ACCESS_ALL )
+forcecustomroundgamemode:help( "Opens the voting menu for custom rounds" )
+
+function ulx.getvotingpercentage( calling_ply)
+	local ratio = GetVotingRatio() * 100
+	calling_ply:PlayerMsg(Color(255,0,0), "[CUSTOM ROUNDS] ", Color(255,255,255), "Current Vote Percent is: ", Color(255,0,0), tostring(ratio), "% ", Color(255,255,255), "'Yes'.")
+end
+local forcecustomroundgamemode = ulx.command( CATEGORY_NAME, "ulx getvotingpercentage", ulx.getvotingpercentage, "!getvotingpercentage" )
+forcecustomroundgamemode:defaultAccess( ULib.ACCESS_SUPERADMIN )
+forcecustomroundgamemode:help( "Gets the currently set voting percentage" )
