@@ -1,9 +1,9 @@
 EndRoundGame.Gamemodes["deathmatch"] = 
 {
+	id = "deathmatch",
 	name = "Traitors vs. Detectives",
 	description = "It is a simple gamemode, Use your role's equipment against other team to win the round. It's simple, find a player, kill a player.",
 	roundPreparing = function()
-		
 	end,
 	roundStart = function()
 		local tick = 0
@@ -26,14 +26,7 @@ EndRoundGame.Gamemodes["deathmatch"] =
 			net.WriteUInt(v:GetCredits(), 8)
 			net.Send(v)
 		end
-
-		--Hook Karma blocker so no one will get penalized if they kill a friendly
-		hook.Add("TTTKarmaGivePenalty", "EndRoundGamefunkarma", function(ply, penalty, victim)
-			return true
-		end)
 	end,
 	roundEnd = function()
-		--Remove hook so regular rounds work again with Karma.
-		hook.Remove("TTTKarmaGivePenalty", "EndRoundGamefunkarma")
 	end,
 }

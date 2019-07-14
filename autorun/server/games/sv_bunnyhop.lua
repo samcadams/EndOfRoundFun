@@ -2,6 +2,7 @@ util.AddNetworkString("firesttt_bunnyhop")
 
 EndRoundGame.Gamemodes["bunnyhop"] = 
 {
+	id = "bhop_gm",
 	name = "Bunnyhop",
 	description = "Regular round but with Bunnyhop enabled, hold space!",
 	roundPreparing = function()

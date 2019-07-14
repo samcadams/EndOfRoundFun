@@ -2,6 +2,7 @@ util.AddNetworkString("firesttt_sleepy")
 
 EndRoundGame.Gamemodes["sleeper"] = 
 {
+	id = "sleeper",
 	name = "Sleeping Traitors",
 	description = "Regular round however if all traitors die a random innocent will switch roles, continuing the round.",
 	sleeper_count = 0,
