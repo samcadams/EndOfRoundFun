@@ -8,7 +8,7 @@ net.Receive("firesttt_csaycustomround", function()
 	else	
 		ULib.csayDraw("CUSTOM ROUND - "..name.."\nModifier - "..modifier, Color(255, 0, 0, 255), 10, 0.7 )
 		chat.AddText(Color(255,0,0), "[CUSTOM ROUND] ", Color(255,255,255), name.." - "..description)
-		chat.AddText(Color(255,0,0), "[CUSTOM ROUND] ", Color(255,255,255), "Modifier -"..modifier)
+		chat.AddText(Color(255,0,0), "[CUSTOM ROUND] ", Color(255,255,255), "Modifier - "..modifier)
 	end
 end)
 

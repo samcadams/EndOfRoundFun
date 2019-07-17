@@ -6,27 +6,61 @@ EndRoundGame.IsActive = false
 EndRoundGame.ActiveGamemode = nil
 EndRoundGame.CurrentModifier = nil
 EndRoundGame.NextRoundCustom = false
+EndRoundGame.NextRoundModifier = false
 EndRoundGame.NextGamemode = nil
+EndRoundGame.NextModifier = nil
 
 EndRoundGame.Gamemodes = {}
 EndRoundGame.Modifiers = {}
 
+ACTIVITY_GAMEMODE = 0
+ACTIVITY_MODIFIER = 1
+ACTIVITY_UNKNOWN = 2
+ACTIVITY_BOTH = 3
+
+local Activity_Meta = {
+	Id = "activity_id",
+	Name = "Activity Name",
+	Description = "Activity Description",
+	ActivityType = ACTIVITY_UNKNOWN,
+	GamemodeBlacklist = {}, -- Only use in _MODIFIER or _BOTH
+	
+	Initialize = function(self) end,
+	RoundPreparing = function(self) end,
+	RoundStart = function(self) end,
+	RoundEnd = function(self) end,
+	Cleanup = function(self) end,
+}
+Activity_Meta.__index = Activity_Meta
+function LoadActivity(activity)
+	setmetatable(activity, Activity_Meta)
+	if activity.ActivityType == 2 then
+		ErrorNoHalt("Activity: "..tostring(activity.Id)..". Missing `ActivityType`. Skipping...\n")
+		return
+	end
+	if activity.ActivityType == 3 then
+		table.insert(EndRoundGame.Gamemodes, activity)
+		table.insert(EndRoundGame.Modifiers, activity)
+	end
+	if activity.ActivityType == 1 then
+		table.insert(EndRoundGame.Modifiers, activity)
+	end
+	if activity.ActivityType == 0 then
+		table.insert(EndRoundGame.Gamemodes, activity)
+	end
+	activity:Initialize()
+end
+
+
+
 print("[CUSTOM ROUNDS] Loading files....")
 --Load gamemodes and modifiers
-local files, directories = file.Find( "addons/endroundfun/lua/autorun/server/games" .. "/*", "GAME" )
+local files, directories = file.Find( "addons/endroundfun/lua/autorun/server/activities" .. "/*", "GAME" )
 local counter = 0
 for _,v in pairs(files) do
-	include("games/"..v)
+	include("activities/"..v)
 	counter = counter + 1
-	print("[CUSTOM ROUNDS] Loaded "..counter.." end round gamemodes...."..v)
-end
---Load gamemodes and modifiers
-local files, directories = file.Find( "addons/endroundfun/lua/autorun/server/modifiers" .. "/*", "GAME" )
-local counter = 0
-for _,v in pairs(files) do
-	include("modifiers/"..v)
-	counter = counter + 1
-	print("[CUSTOM ROUNDS] Loaded "..counter.." end round modifiers...."..v)
+	print("[CUSTOM ROUNDS] Loaded "..counter.." end round activities...."..v)
 end
 print("[CUSTOM ROUNDS] Loaded files!")
 
@@ -43,13 +77,13 @@ function GetVotingRatio()
 			votedno = votedno + 1
 		end
 	end
-	return votedyes / votedno
+	return {(votedyes / (votedno + votedyes)), votedyes, votedno}
 end
 
 
 --Determines if ratio of Yes/No beats the target percentage.
 function ShouldCustomRoundHappen(perc)
-	return (GetVotingRatio() >= perc)
+	return (GetVotingRatio()[1] >= perc)
 end
 
 --Wipes votes off everyone
@@ -64,10 +98,13 @@ net.Receive("firesttt_votecustomround", function(len, ply)
 	local castedvote = net.ReadBool()
 	local died = net.ReadBool()
 	ply:SetNWBool("customroundvote", castedvote)
+	ply:SetNWBool("shownvote", true)
 	print("[CUSTOM ROUND] Received vote from "..ply:Name().." vote content: "..tostring(castedvote))
 	if not table.contains(recentlyvoted, ply) then
 		table.insert(recentlyvoted, ply)
-		local ratio = GetVotingRatio() * 100
+		local ratio = GetVotingRatio()[1] * 100
+		ratio = math.Clamp(ratio, 0, 100)
+		ratio = math.floor(ratio + 0.5)
 		if not died then
 			BroadcastMsg(Color(255,0,0), "[CUSTOM ROUNDS] ", Color(255,255,255), "The Current Vote Percentage is ", Color(255,0,0), tostring(ratio), "% ", Color(255,255,255), "'Yes'. Vote now with ", Color(255,0,0), "!customvote", Color(255,255,255), ".")
 		end
@@ -89,75 +126,93 @@ end)
 --ROUND MANAGEMENT
 math.randomseed(os.time())
 hook.Add("TTTPrepareRound", "firespossiblyenable", function()
-	EndRoundGame.CurrentModifier = nil--debug purposes
+	EndRoundGame.Cleanup()
+	
 	SetGlobalBool("EndRoundGameIsActive", EndRoundGame.IsActive)
 	local rounds_left = GetGlobalInt("ttt_rounds_left")
 	
 	--Check if its last round, if we have enough votes or if it was admin forced.
-	if rounds_left ~= 1 and not ShouldCustomRoundHappen(0.5) and not EndRoundGame.NextRoundCustom then return end
-	
-	--If admin forced, reset variable
-	if EndRoundGame.NextRoundCustom then
-		EndRoundGame.NextRoundCustom = false
-	end
-	
-	local haveModifier = (math.random(2) == 1)
-	if haveModifier then
-		EndRoundGame.CurrentModifier = math.randomchoice(EndRoundGame.Modifiers)
-	end
-	
-	--Enable end round game
-	SetGlobalBool("EndRoundGameIsActive", true)
-	
-	
-	--Decide which game to use if one is not already selected
-	if EndRoundGame.NextGamemode ~= nil then
-		EndRoundGame.ActiveGamemode = EndRoundGame.NextGamemode
-		EndRoundGame.NextGamemode = nil
-	else
-		local goodtogo = false
-		while goodtogo == false do
-			EndRoundGame.ActiveGamemode = math.randomchoice(EndRoundGame.Gamemodes)
-			if EndRoundGame.CurrentModifier != nil then
-				if EndRoundGame.CurrentModifier.gamemodeBlacklist ~= nil then
-					if table.contains(EndRoundGame.CurrentModifier.gamemodeBlacklist, EndRoundGame.ActiveGamemode.id) then
-						print("[CUSTOM ROUNDS] picked gamemode on blacklist")
-					else
-						goodtogo = true
-						break
-					end
-				else
-					goodtogo = true
-					break
-				end
+	if rounds_left ~= 1 and not EndRoundGame.NextRoundCustom then return end
+	if ShouldCustomRoundHappen(.6) or EndRoundGame.NextRoundCustom then 
+		--If admin forced, reset variable
+		if EndRoundGame.NextRoundCustom then
+			EndRoundGame.NextRoundCustom = false
+		end
+		--Enable usage with forced commands
+		local haveModifier = (math.random(2) == 1) or EndRoundGame.NextRoundModifier
+		if haveModifier then
+			if EndRoundGame.NextModifier == nil then
+				EndRoundGame.CurrentModifier = math.randomchoice(EndRoundGame.Modifiers)
 			else
-				goodtogo = true
-				break
+				EndRoundGame.CurrentModifier = EndRoundGame.NextModifier
+				EndRoundGame.NextModifier = nil
 			end
 		end
-	end
+		--Enable end round game
+		SetGlobalBool("EndRoundGameIsActive", true)
+		
 	
-	local gm = EndRoundGame.ActiveGamemode
-	net.Start("firesttt_csaycustomround")
-		net.WriteString(gm.name)
-		net.WriteString(gm.description)
-		if EndRoundGame.CurrentModifier then
-			net.WriteString(EndRoundGame.CurrentModifier.name)
+		
+		if EndRoundGame.NextGamemode ~= nil then
+			EndRoundGame.ActiveGamemode = EndRoundGame.NextGamemode
+			EndRoundGame.NextGamemode = nil
+			if EndRoundGame.CurrentModifier ~= nil then
+					local mod = EndRoundGame.CurrentModifier
+					if #mod.GamemodeBlacklist >= 0 then
+						if table.contains(mod.GamemodeBlacklist, EndRoundGame.ActiveGamemode.Id) then
+							EndRoundGame.CurrentModifier = nil
+						end
+					end
+			end
 		else
-			net.WriteString("none_included")
+			local counter = 0 -- Anti overflow crash protection
+			
+			while EndRoundGame.ActiveGamemode == nil do
+				counter = counter + 1
+				local candidate = math.randomchoice(EndRoundGame.Gamemodes)
+				if EndRoundGame.CurrentModifier ~= nil then
+					local mod = EndRoundGame.CurrentModifier
+					if mod.GamemodeBlacklist ~= nil then
+						if not table.contains(mod.GamemodeBlacklist, candidate.id) then
+							EndRoundGame.ActiveGamemode = candidate
+						end
+					end
+				else
+					EndRoundGame.ActiveGamemode = candidate
+				end
+				--Anti overflow crash protection
+				if counter >= 200 then
+					ErrorNoHalt("[CUSTOM ROUNDS] CRASH STOPPED: Infinite loop detected in gamemode picker, double check your blacklists.\n")
+					EndRoundGame.ActiveGamemode = candidate
+					ErrorNoHalt("[CUSTOM ROUNDS] Responsible Modifier: "..EndRoundGame.CurrentModifier.Id)
+					EndRoundGame.CurrentModifier = nil
+				end
+			end
 		end
-	net.Broadcast()
-	if EndRoundGame.CurrentModifier ~= nil then
-		EndRoundGame.CurrentModifier.roundPreparing()
+		
+		
+		local gm = EndRoundGame.ActiveGamemode
+		net.Start("firesttt_csaycustomround")
+			net.WriteString(gm.Name)
+			net.WriteString(gm.Description)
+			if EndRoundGame.CurrentModifier then
+				net.WriteString(EndRoundGame.CurrentModifier.Name)
+			else
+				net.WriteString("none_included")
+			end
+		net.Broadcast()
+		if EndRoundGame.CurrentModifier ~= nil then
+			EndRoundGame.CurrentModifier:RoundPreparing()
+		end
+		gm:RoundPreparing()
 	end
-	gm.roundPreparing()
 end)
 
 hook.Add("TTTBeginRound", "firesbeginEndRoundGame", function(result)
 	if GetGlobalBool("EndRoundGameIsActive") and EndRoundGame.ActiveGamemode ~= nil then
-		EndRoundGame.ActiveGamemode.roundStart()
+		EndRoundGame.ActiveGamemode:RoundStart()
 		if EndRoundGame.CurrentModifier ~= nil then
-			EndRoundGame.CurrentModifier.roundStart()
+			EndRoundGame.CurrentModifier:RoundStart()
 		end
 		--Hook Karma blocker so no one will get penalized if they kill a friendly
 		hook.Add("TTTKarmaGivePenalty", "EndRoundGamefunkarma", function(ply, penalty, victim)
@@ -168,15 +223,22 @@ end)
 
 hook.Add("TTTEndRound", "firesdisableEndRoundGame", function(result)
 	if GetGlobalBool("EndRoundGameIsActive") and EndRoundGame.ActiveGamemode ~= nil then
-		EndRoundGame.ActiveGamemode.roundEnd()
+		EndRoundGame.ActiveGamemode:RoundEnd()
 		if EndRoundGame.CurrentModifier ~= nil then
-			EndRoundGame.CurrentModifier.roundEnd()
+			EndRoundGame.CurrentModifier:RoundEnd()
 		end
 		SetGlobalBool("EndRoundGameIsActive", false)
-		EndRoundGame.ActiveGamemode = nil
-		EndRoundGame.CurrentModifier = nil
-		ResetVotes()
-		--Remove hook so regular rounds work again with Karma.
-		hook.Remove("TTTKarmaGivePenalty", "EndRoundGamefunkarma")
 	end
 end)
+
+function EndRoundGame.Cleanup()
+	EndRoundGame.ActiveGamemode = nil
+	EndRoundGame.CurrentModifier = nil
+	hook.Remove("TTTKarmaGivePenalty", "EndRoundGamefunkarma")
+	for _,v in pairs(EndRoundGame.Gamemodes) do
+		v:Cleanup()
+	end
+	for _,v in pairs(EndRoundGame.Modifiers) do
+		v:Cleanup()
+	end
+end

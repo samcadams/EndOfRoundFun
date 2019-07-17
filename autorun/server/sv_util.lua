@@ -17,28 +17,26 @@ function PLAYER:PlayerMsg(...)
 	net.Send(self)
 end
 
-function math.randomchoice(t)
-    local keys = {}
-    for key, value in pairs(t) do
-        keys[#keys+1] = key
-    end
-    index = keys[math.random(1, #keys)]
-    return t[index]
-end
-
-function table.contains(t, element)
-  for _, value in pairs(t) do
-    if value == element then
-      return true
-    end
-  end
-  return false
-end
-
-function table.find(t, element)
-    for index, value in pairs(t) do
-        if value == element then
-            return index
-        end
-    end
+function FindActivityById(activity_type, id)
+	if activity_type == 0 then
+		for _,v in pairs(EndRoundGame.Gamemodes) do
+			if v.Id == id then
+				return v
+			end
+		end
+	end
+	if activity_type == 1 then
+		for _,v in pairs(EndRoundGame.Modifiers) do
+			print(v.Id)
+			print(id)
+			print("--")
+			if v.Id == id then
+				return v
+			end
+		end
+	end
+	if activity_type > 1 then
+		ErrorNoHalt("Incorrect activity type passed to FindActivityById/n")
+	end
+	return nil
 end

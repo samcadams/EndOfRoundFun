@@ -79,7 +79,7 @@ function SWEP:PrimaryAttack()
 				self:GetOwner():FireBullets({Num=1, Src=spos, Dir=self:GetOwner():GetAimVector(), Spread=Vector(0,0,0), Tracer=0, Force=1, Damage=0})
 				
 				if EndRoundGame.ActiveGamemode ~= nil then
-					EndRoundGame.ActiveGamemode.addZombie(hitEnt)
+					EndRoundGame.ActiveGamemode.AddZombie(EndRoundGame.ActiveGamemode, hitEnt)
 				end
 			end
 			
@@ -122,13 +122,13 @@ end
 
 function SWEP:Think()
 	--Thank you jmoak3 for this snippet from the bioball because im stupid as shit
-	if (table.Count(self.Owner:GetWeapons()) > 1 && SERVER) then
+	--[[if (table.Count(self.Owner:GetWeapons()) > 1 && SERVER) then
 		self.Owner:StripAll()
 		self.Owner:SetMaxHealth(self.Owner:GetMaxHealth()+1)
 		self.Owner:SetHealth(self.Owner:Health() + 1)
 		self.Owner:Give("ttt_infector")
 		self.Owner:SelectWeapon("ttt_infector")
-	end
+	end]]
 end
 
 

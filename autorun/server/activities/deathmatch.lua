@@ -1,12 +1,13 @@
-EndRoundGame.Gamemodes["deathmatch"] = 
-{
-	id = "deathmatch",
-	name = "Traitors vs. Detectives",
-	description = "It is a simple gamemode, Use your role's equipment against other team to win the round. It's simple, find a player, kill a player.",
-	roundPreparing = function()
-	end,
-	roundStart = function()
-		local tick = 0
+activity = {
+	Id = "deathmatch",
+	Name = "Traitors vs. Detectives",
+	Description = "It is a simple gamemode, Use your role's equipment against other team to win the round. It's simple, find a player, kill a player.",
+	ActivityType = ACTIVITY_GAMEMODE,
+}
+
+
+function activity:RoundStart()
+	local tick = 0
 		for k,v in pairs(player.GetAll()) do
 			tick = tick + 1
 			local team = tick % 2
@@ -26,7 +27,5 @@ EndRoundGame.Gamemodes["deathmatch"] =
 			net.WriteUInt(v:GetCredits(), 8)
 			net.Send(v)
 		end
-	end,
-	roundEnd = function()
-	end,
-}
+end
+LoadActivity(activity)
